@@ -19,5 +19,5 @@ class DATA():
 
 if __name__ == "__main__":
     data = DATA()
-    # data.print_max_min_features()
+    data.print_max_min_features()
 

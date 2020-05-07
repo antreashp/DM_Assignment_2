@@ -22,7 +22,7 @@ class DataTables(DATA):
                            'comp8_rate_percent_diff', ]
     search_property_attributes = ['position', 'price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
-    average_attributes_for_search = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
+    average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
 
     def check_uniqueness(self, pk, attributes, verbose=True):
         if verbose:
@@ -30,7 +30,7 @@ class DataTables(DATA):
                 counts = []
                 for x in attributes:
                     counts.append(group[1][x].nunique())
-                print(counts)
+                print(group[1].iloc[0][pk], counts)
 
         return all(group[1][x].nunique() <= 1 for group in self.data.groupby(pk) for x in attributes)
 
@@ -41,22 +41,36 @@ class DataTables(DATA):
             count = search_group[1][self.search_pk].count()
             num_click = (search_group[1]['click_bool'] == 1).sum()
             num_booking = (search_group[1]['booking_bool'] == 1).sum()
-            average_attributes = [search_group[1][x].mean() for x in self.average_attributes_for_search]
+            average_attributes = [search_group[1][x].mean() for x in self.average_attributes]
             single_search = [search_id] + [search_group[1].iloc[0][x] for x in self.search_attributes]+ \
                             average_attributes + [count, num_click, num_booking]
             search.append(single_search)
         self.search = pd.DataFrame(search, columns=[self.search_pk] + self.search_attributes +
-                                                   ['ave' + x for x in self.average_attributes_for_search] +
+                                                   ['ave_' + x for x in self.average_attributes] +
                                                    ['properties_count', 'num_clicks', 'num_bookings'])
 
     def property_table(self):
-        self.property = []
-
+        property = []
+        for property_group in self.data.groupby(self.property_pk):
+            property_id = property_group[1].iloc[0][self.property_pk]
+            count = property_group[1][self.property_pk].count()
+            num_click = (property_group[1]['click_bool'] == 1).sum()
+            num_booking = (property_group[1]['booking_bool'] == 1).sum()
+            average_attributes = [property_group[1][x].mean() for x in self.average_attributes]
+            single_property = [property_id] + [property_group[1].iloc[0][x] for x in self.search_attributes]+ \
+                            average_attributes + [count, num_click, num_booking]
+            property.append(single_property)
+        self.property = pd.DataFrame(property, columns=[self.search_pk] + self.search_attributes +
+                                                   ['ave_' + x for x in self.average_attributes] +
+                                                   ['search_count', 'num_clicks', 'num_bookings'])
 
 if __name__ == '__main__':
     data = DataTables()
     # data.search_table()
-    print(data.check_uniqueness(data.search_pk, data.search_attributes, verbose=False))
-    print(data.check_uniqueness(data.property_pk, data.property_attributes,  verbose=False))
+    # print(data.check_uniqueness(data.search_pk, data.search_attributes, verbose=False))
+    # print(data.check_uniqueness(data.property_pk, data.property_attributes,  verbose=True))
     data.search_table()
-    print(data.search)
+    data.property_table()
+    # print(data.data[data.data['prop_id'] == 7880])
+    print(data.property)
+

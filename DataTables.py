@@ -64,13 +64,24 @@ class DataTables(DATA):
                                                    ['ave_' + x for x in self.average_attributes] +
                                                    ['search_count', 'num_clicks', 'num_bookings'])
 
+    def build_relations(self):
+        self.relations = {}
+        for index, pair in self.data[[self.search_pk, self.property_pk]].iterrows():
+            search_id = pair[self.search_pk]
+            property_id = pair[self.property_pk]
+            if search_id not in self.relations.keys():
+                self.relations[search_id] = set()
+            self.relations[search_id].add(property_id)
+
+
 if __name__ == '__main__':
     data = DataTables()
     # data.search_table()
     # print(data.check_uniqueness(data.search_pk, data.search_attributes, verbose=False))
     # print(data.check_uniqueness(data.property_pk, data.property_attributes,  verbose=True))
-    data.search_table()
-    data.property_table()
+    # data.search_table()
+    # data.property_table()
     # print(data.data[data.data['prop_id'] == 7880])
-    print(data.property)
-
+    # print(data.property)
+    data.build_relations()
+    print(data.relations)

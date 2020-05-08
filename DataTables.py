@@ -73,15 +73,20 @@ class DataTables(DATA):
                 self.relations[search_id] = set()
             self.relations[search_id].add(property_id)
 
+    def find_random_keys(self):
+        random_search_keys = {x for x, i in self.data[(self.data['random_bool'] == False)][self.search_pk]}
+
+        print(random_search_keys)
+
 
 if __name__ == '__main__':
     data = DataTables()
-    # data.search_table()
+    data.search_table()
     # print(data.check_uniqueness(data.search_pk, data.search_attributes, verbose=False))
     # print(data.check_uniqueness(data.property_pk, data.property_attributes,  verbose=True))
     # data.search_table()
-    # data.property_table()
+    data.property_table()
     # print(data.data[data.data['prop_id'] == 7880])
-    # print(data.property)
-    data.build_relations()
-    print(data.relations)
+    print(data.property)
+    # data.build_relations()
+    # data.find_random_keys()

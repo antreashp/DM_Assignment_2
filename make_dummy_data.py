@@ -6,7 +6,7 @@ import pandas as pd
 filename = 'training_set_VU_DM.csv'
 # reading csv file  
 
-df = pd.read_csv(filename, nrows=1000)
+df = pd.read_csv(filename, nrows=700)
 print(df)
 
 

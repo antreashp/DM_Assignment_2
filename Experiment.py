@@ -135,7 +135,6 @@ if __name__ == "__main__":
 
     def gen_dummy_data(n_ft,max_recs,n_qs):
         d = []
-        
         for q in range(n_qs):
             props_in_q = randint(10,max_recs)
 
@@ -154,7 +153,7 @@ if __name__ == "__main__":
     train_data = gen_dummy_data(54,25,500)
     test_data = gen_dummy_data(54,25,25)
     model_type = 'LambdaMART'
-    model_type = 'LambdaRank'
+    # model_type = 'LambdaRank'
     # model_type = 'LR'
     
     # from DataTables

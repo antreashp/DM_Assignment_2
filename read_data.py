@@ -2,7 +2,7 @@
 
 # Import pandas 
 import pandas as pd 
-
+from collections import defaultdict
 from sklearn import preprocessing
 df = pd.read_pickle('dummy_data.pkl')
 # print(df.head(28))
@@ -13,16 +13,23 @@ df = pd.read_pickle('dummy_data.pkl')
 # print(len(df['srch_id'].unique()))
 # print(df[df['srch_id']==4].max().dropna())
 srchs_id = df['srch_id'].unique()
+my_dict = defaultdict(list)
+
 for s_id in srchs_id:
     s_id = 4
     temp_df = df[df['srch_id']==s_id].max().dropna().drop(['srch_id','date_time','prop_id','srch_destination_id'])
     y = temp_df['position']
+    temp_df.drop('position')
+
     print(y)
     # print(temp_df)
     # temp_df = temp_df
     # temp_df = temp_df.max().dropna()
     # temp_df = temp_df.drop(['date_time'])
+    
+    
     print(temp_df)
+    
     exit()
 records = []
 

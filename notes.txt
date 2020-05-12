@@ -1,0 +1,21 @@
+ 
+
+
+ last proj
+
+ PCA -> tranin_set-labeled
+
+    
+
+
+ this_proj
+ PCA -> labeled + unlabeled
+
+ network -> labeled
+
+
+
+
+
+net -> prop_id
+net -> cluster_id 

@@ -4,12 +4,12 @@ import pandas as pd
 
 class DataTables(DATA):
     search_pk = 'srch_id'
-    search_attributes = ['date_time', 'site_id', 'visitor_location_country_id', 'visitor_hist_starrating',
+    search_attributes = ['date_time', 'visitor_location_country_id', 'visitor_hist_starrating',
                          'visitor_hist_adr_usd', 'random_bool', 'srch_destination_id', 'srch_length_of_stay',
                          'srch_booking_window', 'srch_adults_count', 'srch_children_count', 'srch_room_count',
                          'srch_saturday_night_bool', ]
     property_pk = 'prop_id'
-    property_attributes = ['prop_country_id', 'prop_id', 'prop_starrating', 'prop_review_score', 'prop_brand_bool',
+    property_attributes = ['prop_country_id', 'prop_starrating', 'prop_review_score', 'prop_brand_bool',
                            'prop_location_score1', 'prop_location_score2', 'prop_log_historical_price',
                            'promotion_flag', 'srch_query_affinity_score', 'comp1_rate', 'comp1_inv',
                            'comp1_rate_percent_diff', 'comp2_rate', 'comp2_inv',
@@ -23,7 +23,7 @@ class DataTables(DATA):
     search_property_attributes = ['position', 'price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
     average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
-    features = search_attributes + property_attributes + search_property_attributes
+    features = [search_pk] + search_attributes + property_attributes + search_property_attributes
     target = 'position'
     features.remove(target)
 
@@ -73,7 +73,7 @@ class DataTables(DATA):
             single_property = [property_id] + [property_group[1].iloc[0][x] for x in self.property_attributes]+ \
                             average_attributes + [count, num_click, num_booking]
             property.append(single_property)
-        self.property = pd.DataFrame(property, columns=[self.search_pk] + self.property_attributes +
+        self.property = pd.DataFrame(property, columns=[self.property_pk] + self.property_attributes +
                                                    ['ave_' + x for x in self.average_attributes] +
                                                    ['search_count', 'num_clicks', 'num_bookings'])
 
@@ -111,14 +111,4 @@ class DataTables(DATA):
 
 if __name__ == '__main__':
     data = DataTables()
-    # data.search_table()
-    # print(data.check_uniqueness(data.search_pk, data.search_attributes, verbose=False))
-    # print(data.check_uniqueness(data.property_pk, data.property_attributes,  verbose=True))
-    # data.search_table()
-    # data.property_table()
-    # print(data.data[data.data['prop_id'] == 7880])
-    # print(data.property)
-    # data.build_relations()
-    print(data.search)
-    # print(data.X())
-    # print(data.y())
+    print(data.X())

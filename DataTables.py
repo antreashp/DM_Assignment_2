@@ -30,8 +30,10 @@ class DataTables(DATA):
     def __init__(self):
         super().__init__(filename='dummy_data.pkl')
         self.search_table()
+        self.preprocess_datetime()
         self.property_table()
         self.build_relations()
+
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
         self.keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
 
@@ -96,6 +98,16 @@ class DataTables(DATA):
     def y(self):
         y = self.data[(self.data['random_bool'] == False)][self.target]
         return y
+    
+    def preprocess_datetime(self):
+        # self.search = self.search.dropna(subset=['date_time'])
+        self.search['date_time'] =  pd.to_datetime(self.search['date_time'])
+        self.search['year'] = pd.DatetimeIndex(self.search['date_time']).year
+        self.search['month'] = pd.DatetimeIndex(self.search['date_time']).month
+        self.search['day'] = pd.DatetimeIndex(self.search['date_time']).day
+        self.search['weekday'] = self.search.date_time.dt.weekday_name
+        self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
+        self.search['seconds'] = pd.DatetimeIndex(self.search['date_time']).second
 
 if __name__ == '__main__':
     data = DataTables()
@@ -107,5 +119,6 @@ if __name__ == '__main__':
     # print(data.data[data.data['prop_id'] == 7880])
     # print(data.property)
     # data.build_relations()
-    print(data.X())
-    print(data.y())
+    print(data.search)
+    # print(data.X())
+    # print(data.y())

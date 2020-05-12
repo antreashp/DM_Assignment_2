@@ -157,7 +157,7 @@ if __name__ == "__main__":
     model_type = 'LambdaRank'
     # model_type = 'LR'
     
-    
+    # from DataTables
     exp = Experiment(train_data,test_data,model_type=model_type)
     outs = exp.train()
     outs = exp.eval()

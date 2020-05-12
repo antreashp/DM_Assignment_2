@@ -23,12 +23,17 @@ class DataTables(DATA):
     search_property_attributes = ['position', 'price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
     average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
+    features = search_attributes + property_attributes + search_property_attributes
+    target = 'position'
+    features.remove(target)
 
     def __init__(self):
         super().__init__(filename='dummy_data.pkl')
         self.search_table()
         self.property_table()
         self.build_relations()
+        self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
+        self.keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
 
     def check_uniqueness(self, pk, attributes, verbose=True):
         if verbose:
@@ -79,11 +84,18 @@ class DataTables(DATA):
                 self.relations[search_id] = set()
             self.relations[search_id].add(property_id)
 
-    def find_random_keys(self):
-        # random_search_keys = set([x for x in self.data[(self.data['random_bool'] == False)][self.search_pk]])
-        self.X_random = self.data[(self.data['random_bool'] == False)]
-        print(self.X_random)
+    def random_features(self):
+        X_random = self.data[(self.data['random_bool'] == True)][self.features]
+        print(self.random_keys)
+        return X_random
 
+    def X(self):
+        X = self.data[(self.data['random_bool'] == False)][self.features]
+        return X
+
+    def y(self):
+        y = self.data[(self.data['random_bool'] == False)][self.target]
+        return y
 
 if __name__ == '__main__':
     data = DataTables()
@@ -95,4 +107,5 @@ if __name__ == '__main__':
     # print(data.data[data.data['prop_id'] == 7880])
     # print(data.property)
     # data.build_relations()
-    data.find_random_keys()
+    print(data.X())
+    print(data.y())

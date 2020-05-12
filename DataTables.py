@@ -24,6 +24,12 @@ class DataTables(DATA):
        'booking_bool', 'orig_destination_distance']
     average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
 
+    def __init__(self):
+        super().__init__(filename='dummy_data.pkl')
+        self.search_table()
+        self.property_table()
+        self.build_relations()
+
     def check_uniqueness(self, pk, attributes, verbose=True):
         if verbose:
             for group in self.data.groupby(pk):
@@ -74,19 +80,19 @@ class DataTables(DATA):
             self.relations[search_id].add(property_id)
 
     def find_random_keys(self):
-        random_search_keys = {x for x, i in self.data[(self.data['random_bool'] == False)][self.search_pk]}
-
-        print(random_search_keys)
+        # random_search_keys = set([x for x in self.data[(self.data['random_bool'] == False)][self.search_pk]])
+        self.X_random = self.data[(self.data['random_bool'] == False)]
+        print(self.X_random)
 
 
 if __name__ == '__main__':
     data = DataTables()
-    data.search_table()
+    # data.search_table()
     # print(data.check_uniqueness(data.search_pk, data.search_attributes, verbose=False))
     # print(data.check_uniqueness(data.property_pk, data.property_attributes,  verbose=True))
     # data.search_table()
-    data.property_table()
+    # data.property_table()
     # print(data.data[data.data['prop_id'] == 7880])
-    print(data.property)
+    # print(data.property)
     # data.build_relations()
-    # data.find_random_keys()
+    data.find_random_keys()

@@ -63,10 +63,10 @@ class DataTables(DATA):
             num_click = (property_group[1]['click_bool'] == 1).sum()
             num_booking = (property_group[1]['booking_bool'] == 1).sum()
             average_attributes = [property_group[1][x].mean() for x in self.average_attributes]
-            single_property = [property_id] + [property_group[1].iloc[0][x] for x in self.search_attributes]+ \
+            single_property = [property_id] + [property_group[1].iloc[0][x] for x in self.property_attributes]+ \
                             average_attributes + [count, num_click, num_booking]
             property.append(single_property)
-        self.property = pd.DataFrame(property, columns=[self.search_pk] + self.search_attributes +
+        self.property = pd.DataFrame(property, columns=[self.search_pk] + self.property_attributes +
                                                    ['ave_' + x for x in self.average_attributes] +
                                                    ['search_count', 'num_clicks', 'num_bookings'])
 

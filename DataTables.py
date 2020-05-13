@@ -20,12 +20,11 @@ class DataTables(DATA):
                            'comp6_rate_percent_diff', 'comp7_rate', 'comp7_inv',
                            'comp7_rate_percent_diff', 'comp8_rate', 'comp8_inv',
                            'comp8_rate_percent_diff', ]
-    search_property_attributes = ['position', 'price_usd', 'click_bool', 'gross_bookings_usd',
+    search_property_attributes = ['price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
     average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
-    features = [search_pk] + search_attributes + property_attributes + search_property_attributes
+    features = [search_pk] + search_attributes + [property_pk] + property_attributes + search_property_attributes
     target = 'position'
-    features.remove(target)
 
     def __init__(self):
         super().__init__(filename='dummy_data.pkl')

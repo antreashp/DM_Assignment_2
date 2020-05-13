@@ -109,6 +109,12 @@ class DataTables(DATA):
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
         self.search['seconds'] = pd.DatetimeIndex(self.search['date_time']).second
 
+    def save(self, data_name='data.pkl', search_name='search.pkl', property_name='property.pkl'):
+        self.data.to_pickle(data_name)
+        self.search.to_pickle(search_name)
+        self.property.to_pickle(property_name)
+
+
 if __name__ == '__main__':
     data = DataTables()
     print(data.X())

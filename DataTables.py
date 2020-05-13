@@ -88,17 +88,13 @@ class DataTables(DATA):
             self.relations[search_id].add(property_id)
 
     def random_features(self):
-        X_random = self.data[(self.data['random_bool'] == True)][self.features]
-        print(self.random_keys)
-        return X_random
+        return self.data[(self.data['random_bool'] == True)][self.features]
 
     def X(self):
-        X = self.data[(self.data['random_bool'] == False)][self.features]
-        return X
+        return self.data[(self.data['random_bool'] == False)][self.features]
 
     def y(self):
-        y = self.data[(self.data['random_bool'] == False)][self.target]
-        return y
+        return self.data[(self.data['random_bool'] == False)][self.target]
     
     def preprocess_datetime(self):
         # self.search = self.search.dropna(subset=['date_time'])
@@ -125,6 +121,22 @@ class DataTables(DATA):
         merged_data = pd.merge(merged_data, property, on=self.property_pk)
         merged_data = pd.merge(merged_data, search_property, on=[self.search_pk, self.property_pk])
         return merged_data
+
+        # here are some code that we need if we keep the data after merging in this class:
+        self.data = merged_data
+        self.features = list(merged_data.columns)
+
+    def non_random(self):
+        return self.data[~(
+            self.data[self.search_pk].isin(self.non_random_keys[self.search_pk]) &
+            self.data[self.property_pk].isin(self.non_random_keys[self.property_pk])
+        )]
+
+    def random(self):
+        return self.data[~(
+            self.data[self.search_pk].isin(self.random_keys[self.search_pk]) &
+            self.data[self.property_pk].isin(self.random_keys[self.property_pk])
+        )]
 
 
 if __name__ == '__main__':

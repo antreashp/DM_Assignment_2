@@ -34,7 +34,8 @@ class DataTables(DATA):
         self.build_relations()
 
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
-        self.keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
+        self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
+        self.keys = self.data[[self.search_pk, self.property_pk]]
 
     def check_uniqueness(self, pk, attributes, verbose=True):
         if verbose:
@@ -48,6 +49,7 @@ class DataTables(DATA):
 
     def search_table(self):
         search = []
+        self.search_groups = self.data.groupby(self.search_pk)
         for search_group in self.data.groupby(self.search_pk):
             search_id = search_group[1].iloc[0][self.search_pk]
             count = search_group[1][self.search_pk].count()
@@ -107,13 +109,24 @@ class DataTables(DATA):
         self.search['weekday'] = self.search.date_time.dt.weekday_name
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
         self.search['seconds'] = pd.DatetimeIndex(self.search['date_time']).second
+        self.features.extend(['year', 'month', 'day', 'weekday', 'hours', 'seconds'])
 
     def save(self, data_name='data.pkl', search_name='search.pkl', property_name='property.pkl'):
         self.data.to_pickle(data_name)
         self.search.to_pickle(search_name)
         self.property.to_pickle(property_name)
 
+    def merge(self, search, property, search_property):
+        search = pd.concat([self.search[self.search_pk], search], axis=1)
+        property = pd.concat([self.property[self.property_pk], property], axis=1)
+        search_property = pd.concat([self.keys, search_property])
+
+        merged_data = pd.merge(self.keys, search, on=self.search_pk)
+        merged_data = pd.merge(merged_data, property, on=self.property_pk)
+        merged_data = pd.merge(merged_data, search_property, on=[self.search_pk, self.property_pk])
+        return merged_data
+
 
 if __name__ == '__main__':
     data = DataTables()
-    print(data.X())
+    data.merge(data.search[data.search_attributes], data.property[data.property_attributes], data.data[data.search_property_attributes])

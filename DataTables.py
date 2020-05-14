@@ -1,6 +1,6 @@
 from DATA import DATA
 import pandas as pd
-
+from tqdm import tqdm
 
 class DataTables(DATA):
     search_pk = 'srch_id'
@@ -29,7 +29,7 @@ class DataTables(DATA):
     def __init__(self):
         super().__init__(filename='dummy_data.pkl')
         self.search_table()
-        self.preprocess_datetime()
+        # self.preprocess_datetime()
         self.property_table()
         self.build_relations()
 
@@ -50,7 +50,7 @@ class DataTables(DATA):
     def search_table(self):
         search = []
         self.search_groups = self.data.groupby(self.search_pk)
-        for search_group in self.data.groupby(self.search_pk):
+        for search_group in tqdm(self.data.groupby(self.search_pk)):
             search_id = search_group[1].iloc[0][self.search_pk]
             count = search_group[1][self.search_pk].count()
             num_click = (search_group[1]['click_bool'] == 1).sum()
@@ -65,7 +65,7 @@ class DataTables(DATA):
 
     def property_table(self):
         property = []
-        for property_group in self.data.groupby(self.property_pk):
+        for property_group in tqdm(self.data.groupby(self.property_pk)):
             property_id = property_group[1].iloc[0][self.property_pk]
             count = property_group[1][self.property_pk].count()
             num_click = (property_group[1]['click_bool'] == 1).sum()
@@ -80,7 +80,7 @@ class DataTables(DATA):
 
     def build_relations(self):
         self.relations = {}
-        for index, pair in self.data[[self.search_pk, self.property_pk]].iterrows():
+        for index, pair in tqdm(self.data[[self.search_pk, self.property_pk]].iterrows()):
             search_id = pair[self.search_pk]
             property_id = pair[self.property_pk]
             if search_id not in self.relations.keys():

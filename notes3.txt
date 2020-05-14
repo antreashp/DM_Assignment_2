@@ -1,0 +1,127 @@
+
+
+
+#x = prop_vector
+x = srch_vector
+def tranfrom(x )
+
+    x.shape = (1000,20)
+
+    x = transfrom (x)  
+
+    x.shape = (1000,15)
+    return x
+
+
+for i in df.iter...
+
+n_schs
+n_props
+data = (n_scrs*10,50)
+
+x = np.array(data[[everything in sech features except ids]].list())
+
+
+
+pca_srchs()
+    search_matrix.shape = (n_srch,30)
+
+    model = fit(serch_vectors)
+    search_vectors = model.transform(serch_vectors)
+    search_matrix.shape = (n_srch,15)
+
+data[[everything in sech features except ids]] = x
+iloc()
+
+
+
+pca_prop()
+
+    model = fit(prop_vectors)
+    search_vectors = model.transform(prop_vectors)
+
+if children ==0 and adults ==0 :
+    check price for those hotels 
+    order
+    matrix.append(vector)
+elif children ==1 and adults ==0:
+    check price for those hotels 
+    order
+    matrix.append(vector)
+.
+.
+.
+vector = dict.mean(axis=1)
+order vecotr
+
+
+
+
+net() ->  1 number
+
+
+
+
+
+
+property with misiing value ->net() ->  property
+
+
+'prop_country_id',                         ->  one-hot-vetor
+'prop_starrating',                         ->  0-1     /5
+'prop_review_score',                       ->  0-1     /5
+'prop_brand_bool',                         ->   bool
+prop_location_score1',                     ->  0-1     /10~
+'prop_location_score2',                    ->  nochange                
+'prop_log_historical_price',               ->  nochange
+'promotion_flag',                          ->  nochange
+    'srch_query_affinity_score',
+'comp1_rate', 
+'comp1_inv',
+comp1_rate_percent_diff', 
+'comp2_rate', 
+'comp2_inv',
+'comp2_rate_percent_diff', 
+'comp3_rate', 'comp3_inv',
+                          
+ 'comp3_rate_percent_diff', 
+ 'comp4_rate', 'comp4_inv',
+'comp4_rate_percent_diff', 
+'comp5_rate', 
+'comp5_inv',
+'comp5_rate_percent_diff',
+'comp6_rate',
+    'comp6_inv',
+'comp6_rate_percent_diff',
+'comp7_rate', 
+'comp7_inv',
+'comp7_rate_percent_diff', 
+'comp8_rate',
+'comp8_inv',
+'comp8_rate_percent_diff', ]
+
+
+        
+
+
+
+search_feats + prop_feats + position        
+
+
+
+
+
+
+
+
+
+
+search1 + prop1 + 3
+search1 + prop2 + 2
+search1 + prop3 + 1
+search1 + prop4 +match_bool    + 0
+search1 + prop5 + 23
+search1 + propn + 0        
+
+
+

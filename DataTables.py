@@ -1,6 +1,8 @@
 from DATA import DATA
 import pandas as pd
 from tqdm import tqdm
+import random
+import numpy as np
 
 class DataTables(DATA):
     search_pk = 'srch_id'
@@ -26,16 +28,22 @@ class DataTables(DATA):
     features = [search_pk] + search_attributes + [property_pk] + property_attributes + search_property_attributes
     target = 'position'
 
-    def __init__(self):
+    destination = 'srch_destination_id'
+    country = 'prop_country_id'
+
+    def __init__(self, negative_data=100):
         super().__init__(filename='dummy_data.pkl')
+        self.negative_data = negative_data
         self.search_table()
-        # self.preprocess_datetime()
         self.property_table()
         self.build_relations()
+        # self.preprocess_datetime()
+        
 
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
         self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
         self.keys = self.data[[self.search_pk, self.property_pk]]
+        self.destination_keys = self.data[[self.destination, self.country]]
 
     def check_uniqueness(self, pk, attributes, verbose=True):
         if verbose:
@@ -46,6 +54,30 @@ class DataTables(DATA):
                 print(group[1].iloc[0][pk], counts)
 
         return all(group[1][x].nunique() <= 1 for group in self.data.groupby(pk) for x in attributes)
+
+    def add_negative_data(self):
+        negative_table = []
+        for i in range(self.negative_data):
+            search_key = self.data.iloc[random.randint(0, self.data.shape[0])][self.search_pk]
+            negative_property_keys = list(set(list(self.data[self.property_pk])) - self.relations[search_key])
+            negative_property_key = random.choice(negative_property_keys)
+            new_row = {}
+            new_row[self.search_pk] = max(list(self.data[self.search_pk])) + 1
+            new_row[self.property_pk] = max(list(self.data[self.property_pk])) + 1
+            for search_feature in self.search_attributes:
+                new_row[search_feature] = self.data[(
+                    self.data[self.search_pk] == search_key
+                )].iloc[0][search_feature]
+            for property_feature in self.property_attributes:
+                new_row[property_feature] = self.data[(
+                    self.data[self.property_pk] == negative_property_key
+                )].iloc[0][property_feature]
+            for feature in self.search_property_attributes:
+                new_row[feature] = np.nan
+            new_row[self.target] = 0
+            print(new_row)
+            self.data = self.data.append(new_row, ignore_index=True)
+        print(self.data)
 
     def search_table(self):
         search = []
@@ -141,4 +173,5 @@ class DataTables(DATA):
 
 if __name__ == '__main__':
     data = DataTables()
-    data.merge(data.search[data.search_attributes], data.property[data.property_attributes], data.data[data.search_property_attributes])
+    data.negative_data = 1
+    data.add_negative_data()

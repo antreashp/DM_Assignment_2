@@ -7,10 +7,10 @@ import seaborn as sns
 import timeit
 from kmodes.kmodes import KModes
 import math
-
+from sklearn.mixture import GMM
 from kmodes.kprototypes import KPrototypes
 from kmodes.util.dissim import ng_dissim
-from sklearn.mixture import GMM
+
 
 class Clustering():
     def __init__(self,matrix = None):
@@ -56,7 +56,7 @@ class Clustering():
         plt.show()
         return array_cluster
     
-    def find_kmeans_silhouette(self,kmin=2,kmax=15):
+    def find_kmeans_silhouette(self,kmin=2,kmax=15,save = True):
         df_id_vs_variable = self.matrix.fillna(0)
         sil_scores =[]
         for k in range(kmin,kmax):
@@ -69,10 +69,11 @@ class Clustering():
         plt.xlabel('Number of Clusters')
         plt.ylabel('Silhouette Score')
         plt.show()
+        
     def to_numpy(self):
         return np.array(self.matrix.drop(columns=['prop_id']).dropna(axis='columns',thresh=50).values.tolist())
         
-    def kmodes(self,K=20,N=int(1e5),M=10,T=3,type='huang'):
+    def kmodes(self,K=20,N=int(1e5),M=10,T=3,type='huang',save = True):
         data = self.to_numpy()
         
         missing = ~np.isfinite(data)
@@ -89,7 +90,7 @@ class Clustering():
         labels = model.labels_
         return centroids, labels
 
-    def kproto(self,K=20,N=int(1e5),MN=22,T=3,type='cao'):
+    def kproto(self,K=20,N=int(1e5),MN=22,T=3,type='cao',save = True):
         data = np.array(self.matrix.drop(columns=['prop_id']).values.tolist())
         meh = []
         for i in range(len(data)):
@@ -107,7 +108,7 @@ class Clustering():
         clusters = model.fit_predict(data, categorical=list(range(M - MN, M)))
         return np.array(model.cluster_centroids_[0]),np.array(model.cluster_centroids_[1]),np.array(clusters)
 
-    def GMM(self,k = 10,covariance_type='diag', init_params='wmc', min_covar=0.001, n_init=1, n_iter=100, params='wmc', random_state=None,tol=0.001, verbose=1):
+    def GMM(self,k = 10,covariance_type='diag', init_params='wmc', min_covar=0.001, n_init=1, n_iter=100, params='wmc', random_state=None,tol=0.001, verbose=1,save = True):
         data = self.to_numpy()
         
         missing = ~np.isfinite(data)
@@ -119,21 +120,30 @@ class Clustering():
         gmm.fit(data)
         labels = gmm.predict(data)
         probs = gmm.predict_proba(data)
+        if save:
+            self.save(gmm,'Clustering_gmm_model.pkl')
+
+
         return labels, probs
+    def save(self,model,name = 'cluster_model'):
+        pickle.dump( data, open( 'models/'+name+'.pkl', "wb" ) )
 if __name__ == "__main__":
-    data = DataTables()
+    # data = DataTables()
     # data = data.property[ [data.property_pk]+data.property_attributes]
-    
+    # pickle.dump( data, open( 'datatables.pkl', "wb" ) )
+
+    # exit()
+    data = pickle.load( open(  'datatables.pkl', "rb" ) )
     c = Clustering(data)
     
-    c.find_kmeans_silhouette(kmin=2,kmax=15)
-    clusters = c.vanilla()
+    # c.find_kmeans_silhouette(kmin=2,kmax=15)
+    # clusters = c.vanilla()
     clusters, probs = c.GMM(k = 10,covariance_type='diag', init_params='wmc', min_covar=0.001, n_init=1, n_iter=100, params='wmc', verbose=1)
-    centroids, labels = c.kmodes(K=10,N=int(1e5),M=10,T=3,type='huang')
-    num, cat,labels = c.kproto(K=10,N=int(1e5),MN=22,T=3,type='cao')
+    # centroids, labels = c.kmodes(K=10,N=int(1e5),M=10,T=3,type='huang')
+    # num, cat,labels = c.kproto(K=10,N=int(700),MN=22,T=3,type='cao')
     
     
     # print(clusters)
     # print(clusters, probs)
     # print(centroids,labels)
-    # print(num.shape, cat.shape, labels.shape)
+    print(num.shape, cat.shape, labels.shape)

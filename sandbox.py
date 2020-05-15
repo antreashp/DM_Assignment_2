@@ -2,8 +2,14 @@
 # from Experiment import Experiment
 from DataTables import DataTables
 import pandas as pd
-data = DataTables()
 
+
+
+data = DataTables().data
+print(data)
+
+
+exit()
 print(data.search.head(5))
 print(data.property.head(5))
 def preprocess_datetime(self):

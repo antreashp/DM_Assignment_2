@@ -1,6 +1,8 @@
 from DATA import DATA
 import pandas as pd
-
+from tqdm import tqdm
+import random
+import numpy as np
 
 class DataTables(DATA):
     search_pk = 'srch_id'
@@ -26,16 +28,22 @@ class DataTables(DATA):
     features = [search_pk] + search_attributes + [property_pk] + property_attributes + search_property_attributes
     target = 'position'
 
-    def __init__(self):
+    destination = 'srch_destination_id'
+    country = 'prop_country_id'
+
+    def __init__(self, negative_data=100):
         super().__init__(filename='dummy_data.pkl')
+        self.negative_data = negative_data
         self.search_table()
-        self.preprocess_datetime()
         self.property_table()
         self.build_relations()
+        # self.preprocess_datetime()
+        
 
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
         self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
         self.keys = self.data[[self.search_pk, self.property_pk]]
+        self.destination_keys = self.data[[self.destination, self.country]]
 
     def check_uniqueness(self, pk, attributes, verbose=True):
         if verbose:
@@ -47,10 +55,34 @@ class DataTables(DATA):
 
         return all(group[1][x].nunique() <= 1 for group in self.data.groupby(pk) for x in attributes)
 
+    def add_negative_data(self):
+        negative_table = []
+        for i in range(self.negative_data):
+            search_key = self.data.iloc[random.randint(0, self.data.shape[0])][self.search_pk]
+            negative_property_keys = list(set(list(self.data[self.property_pk])) - self.relations[search_key])
+            negative_property_key = random.choice(negative_property_keys)
+            new_row = {}
+            new_row[self.search_pk] = max(list(self.data[self.search_pk])) + 1
+            new_row[self.property_pk] = max(list(self.data[self.property_pk])) + 1
+            for search_feature in self.search_attributes:
+                new_row[search_feature] = self.data[(
+                    self.data[self.search_pk] == search_key
+                )].iloc[0][search_feature]
+            for property_feature in self.property_attributes:
+                new_row[property_feature] = self.data[(
+                    self.data[self.property_pk] == negative_property_key
+                )].iloc[0][property_feature]
+            for feature in self.search_property_attributes:
+                new_row[feature] = np.nan
+            new_row[self.target] = 0
+            print(new_row)
+            self.data = self.data.append(new_row, ignore_index=True)
+        print(self.data)
+
     def search_table(self):
         search = []
         self.search_groups = self.data.groupby(self.search_pk)
-        for search_group in self.data.groupby(self.search_pk):
+        for search_group in tqdm(self.data.groupby(self.search_pk)):
             search_id = search_group[1].iloc[0][self.search_pk]
             count = search_group[1][self.search_pk].count()
             num_click = (search_group[1]['click_bool'] == 1).sum()
@@ -65,7 +97,7 @@ class DataTables(DATA):
 
     def property_table(self):
         property = []
-        for property_group in self.data.groupby(self.property_pk):
+        for property_group in tqdm(self.data.groupby(self.property_pk)):
             property_id = property_group[1].iloc[0][self.property_pk]
             count = property_group[1][self.property_pk].count()
             num_click = (property_group[1]['click_bool'] == 1).sum()
@@ -80,7 +112,7 @@ class DataTables(DATA):
 
     def build_relations(self):
         self.relations = {}
-        for index, pair in self.data[[self.search_pk, self.property_pk]].iterrows():
+        for index, pair in tqdm(self.data[[self.search_pk, self.property_pk]].iterrows()):
             search_id = pair[self.search_pk]
             property_id = pair[self.property_pk]
             if search_id not in self.relations.keys():
@@ -141,4 +173,5 @@ class DataTables(DATA):
 
 if __name__ == '__main__':
     data = DataTables()
-    data.merge(data.search[data.search_attributes], data.property[data.property_attributes], data.data[data.search_property_attributes])
+    data.negative_data = 1
+    data.add_negative_data()

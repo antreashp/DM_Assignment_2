@@ -3,6 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 import random
 import numpy as np
+from sklearn.preprocessing import OneHotEncoder
 
 class DataTables(DATA):
     search_pk = 'srch_id'
@@ -13,15 +14,7 @@ class DataTables(DATA):
     property_pk = 'prop_id'
     property_attributes = ['prop_country_id', 'prop_starrating', 'prop_review_score', 'prop_brand_bool',
                            'prop_location_score1', 'prop_location_score2', 'prop_log_historical_price',
-                           'promotion_flag', 'srch_query_affinity_score', 'comp1_rate', 'comp1_inv',
-                           'comp1_rate_percent_diff', 'comp2_rate', 'comp2_inv',
-                           'comp2_rate_percent_diff', 'comp3_rate', 'comp3_inv',
-                           'comp3_rate_percent_diff', 'comp4_rate', 'comp4_inv',
-                           'comp4_rate_percent_diff', 'comp5_rate', 'comp5_inv',
-                           'comp5_rate_percent_diff', 'comp6_rate', 'comp6_inv',
-                           'comp6_rate_percent_diff', 'comp7_rate', 'comp7_inv',
-                           'comp7_rate_percent_diff', 'comp8_rate', 'comp8_inv',
-                           'comp8_rate_percent_diff', ]
+                           'promotion_flag', 'srch_query_affinity_score',]
     search_property_attributes = ['price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
     average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
@@ -38,7 +31,7 @@ class DataTables(DATA):
         self.property_table()
         self.build_relations()
         # self.preprocess_datetime()
-        
+        self.property_price()
 
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
         self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
@@ -56,7 +49,6 @@ class DataTables(DATA):
         return all(group[1][x].nunique() <= 1 for group in self.data.groupby(pk) for x in attributes)
 
     def add_negative_data(self):
-        negative_table = []
         for i in range(self.negative_data):
             search_key = self.data.iloc[random.randint(0, self.data.shape[0])][self.search_pk]
             negative_property_keys = list(set(list(self.data[self.property_pk])) - self.relations[search_key])
@@ -106,9 +98,13 @@ class DataTables(DATA):
             single_property = [property_id] + [property_group[1].iloc[0][x] for x in self.property_attributes]+ \
                             average_attributes + [count, num_click, num_booking]
             property.append(single_property)
-        self.property = pd.DataFrame(property, columns=[self.property_pk] + self.property_attributes +
-                                                   ['ave_' + x for x in self.average_attributes] +
-                                                   ['search_count', 'num_clicks', 'num_bookings'])
+        self.property = pd.DataFrame(
+            property, columns=
+            [self.property_pk] +
+            self.property_attributes +
+            ['ave_' + x for x in self.average_attributes] +
+            ['search_count', 'num_clicks', 'num_bookings']
+        )
 
     def build_relations(self):
         self.relations = {}
@@ -151,12 +147,13 @@ class DataTables(DATA):
 
         merged_data = pd.merge(self.keys, search, on=self.search_pk)
         merged_data = pd.merge(merged_data, property, on=self.property_pk)
-        merged_data = pd.merge(merged_data, search_property, on=[self.search_pk, self.property_pk])
-        return merged_data
+        # search_property_table discarded
+        # merged_data = pd.merge(merged_data, search_property, on=[self.search_pk, self.property_pk])
 
         # here are some code that we need if we keep the data after merging in this class:
         self.data = merged_data
         self.features = list(merged_data.columns)
+        return merged_data
 
     def non_random(self):
         return self.data[~(
@@ -170,8 +167,28 @@ class DataTables(DATA):
             self.data[self.property_pk].isin(self.random_keys[self.property_pk])
         )]
 
+    def property_price(self):
+        search_price_groups = self.data[[
+            self.search_pk, self.property_pk, 'srch_adults_count', 'srch_children_count', 'srch_room_count',
+            'price_usd'
+        ]].copy()
+        search_price_groups.loc[:, 'price_score'] = 1 - search_price_groups.groupby(
+            ['srch_adults_count', 'srch_children_count', 'srch_room_count']
+        )['price_usd'].rank(pct=True)
+        property_price_scores = search_price_groups.groupby(self.property_pk)[
+            'price_score'].mean().reset_index()
+        self.property = pd.merge(self.property, property_price_scores, on=self.property_pk)
+
+    def one_hot(self, dataframe, key):
+        dataframe[key] = pd.Categorical(dataframe[key])
+        dummies = pd.get_dummies(dataframe[key], prefix=key)
+        dataframe = dataframe.drop(key, axis = 1)
+        dataframe = dataframe.join(dummies)
+        print(dataframe)
+
 
 if __name__ == '__main__':
     data = DataTables()
     data.negative_data = 1
-    data.add_negative_data()
+    # data.add_negative_data()
+    data.one_hot(data.property, 'prop_country_id')

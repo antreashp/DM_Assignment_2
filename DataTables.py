@@ -3,7 +3,9 @@ import pandas as pd
 from tqdm import tqdm
 import random
 import numpy as np
+import math
 from sklearn.preprocessing import OneHotEncoder
+from utils import *
 
 class DataTables(DATA):
     search_pk = 'srch_id'
@@ -31,6 +33,8 @@ class DataTables(DATA):
         self.property_table()
         self.build_relations()
         # self.preprocess_datetime()
+        self.preprocess()
+        self.preprocess_datetime()
         self.property_price()
 
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
@@ -133,7 +137,21 @@ class DataTables(DATA):
         self.search['weekday'] = self.search.date_time.dt.weekday_name
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
         self.search['seconds'] = pd.DatetimeIndex(self.search['date_time']).second
+        self.search.drop('date_time', axis=1)
         self.features.extend(['year', 'month', 'day', 'weekday', 'hours', 'seconds'])
+        self.features.remove('date_time')
+
+        self.search['year'] = one_hot(self.search, 'year')
+        self.search['last_week_of_nov'] = np.where(
+            (self.search['month'] == 11) & (self.search['day'] > 22), 1, 0
+        )
+        self.search['week_before_christmas'] = np.where(
+            (self.search['month'] == 12) & (self.search['day'] > 17), 1, 0
+        )
+
+        self.search['month'] = one_hot(self.search, 'month')
+        self.search['weekday'] = one_hot(self.search, 'weekday')
+
 
     def save(self, data_name='data.pkl', search_name='search.pkl', property_name='property.pkl'):
         self.data.to_pickle(data_name)
@@ -143,7 +161,7 @@ class DataTables(DATA):
     def merge(self, search, property, search_property):
         search = pd.concat([self.search[self.search_pk], search], axis=1)
         property = pd.concat([self.property[self.property_pk], property], axis=1)
-        search_property = pd.concat([self.keys, search_property])
+        # search_property = pd.concat([self.keys, search_property])
 
         merged_data = pd.merge(self.keys, search, on=self.search_pk)
         merged_data = pd.merge(merged_data, property, on=self.property_pk)
@@ -179,16 +197,35 @@ class DataTables(DATA):
             'price_score'].mean().reset_index()
         self.property = pd.merge(self.property, property_price_scores, on=self.property_pk)
 
-    def one_hot(self, dataframe, key):
-        dataframe[key] = pd.Categorical(dataframe[key])
-        dummies = pd.get_dummies(dataframe[key], prefix=key)
-        dataframe = dataframe.drop(key, axis = 1)
-        dataframe = dataframe.join(dummies)
-        print(dataframe)
+    def normalize(self):
+        methods = {
+            'prop_starrating': lambda x: x / 5,
+            'prop_review_score': lambda x: x / 5,
+            'prop_location_score1': lambda x: x / 10,
+        }
 
+        for key, method in methods.items():
+            self.data[key] = self.data[key].apply(method)
+
+        price_ranges = {
+            100: 1,
+            200: 2,
+            300: 3,
+            400: 4,
+        }
+        select_price_range = lambda x: [price_ranges[i] for i in price_ranges.keys() if x < i][-1] if x < 400 else \
+            np.nan if math.isnan(x) else 5
+        self.data['visitor_hist_adr_usd'] = self.data['visitor_hist_adr_usd'].apply(select_price_range)
+
+
+    def preprocess(self):
+        self.property = one_hot(self.property, 'prop_country_id')
+        self.search = one_hot(self.search, 'visitor_location_country_id')
+        self.normalize()
 
 if __name__ == '__main__':
     data = DataTables()
     data.negative_data = 1
     # data.add_negative_data()
-    data.one_hot(data.property, 'prop_country_id')
+    # data.one_hot(data.property, 'prop_country_id')
+    # data.preprocess()

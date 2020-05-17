@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import numpy as np
+import pandas as pd
 
 """
 Implementation of normalized discounted cumulative gain.
@@ -113,3 +114,11 @@ def ndcg(relevance, nranks, alternate=True):
         return 0.0
 
     return dcg(rel, alternate) / ideal_dcg
+
+def one_hot(dataframe, key) -> pd.DataFrame:
+    dataframe[key] = pd.Categorical(dataframe[key])
+    dummies = pd.get_dummies(dataframe[key], prefix=key)
+    dataframe = dataframe.drop(key, axis = 1)
+    dataframe = dataframe.join(dummies)
+    return dataframe
+

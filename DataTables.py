@@ -32,12 +32,14 @@ class DataTables(DATA):
         self.search_table()
         self.property_table()
         self.build_relations()
+        # self.add_negative_data()
         # self.preprocess_datetime()
         self.preprocess()
         self.preprocess_datetime()
         self.property_price()
-        print(self.property.columns)
 
+        self.property.fillna(np.nan)
+        self.search.fillna(np.nan)
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
         self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
         self.keys = self.data[[self.search_pk, self.property_pk]]
@@ -160,7 +162,7 @@ class DataTables(DATA):
         self.search.to_pickle(search_name)
         self.property.to_pickle(property_name)
 
-    def merge(self, search, property, search_property):
+    def merge(self, search, property):
         search = pd.concat([self.search[self.search_pk], search], axis=1)
         property = pd.concat([self.property[self.property_pk], property], axis=1)
         # search_property = pd.concat([self.keys, search_property])

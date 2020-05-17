@@ -36,6 +36,7 @@ class DataTables(DATA):
         self.preprocess()
         self.preprocess_datetime()
         self.property_price()
+        print(self.property.columns)
 
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
         self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
@@ -136,7 +137,6 @@ class DataTables(DATA):
         self.search['day'] = pd.DatetimeIndex(self.search['date_time']).day
         self.search['weekday'] = self.search.date_time.dt.weekday_name
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
-        self.search['seconds'] = pd.DatetimeIndex(self.search['date_time']).second
         self.search.drop('date_time', axis=1)
         self.features.extend(['year', 'month', 'day', 'weekday', 'hours', 'seconds'])
         self.features.remove('date_time')
@@ -148,6 +148,8 @@ class DataTables(DATA):
         self.search['week_before_christmas'] = np.where(
             (self.search['month'] == 12) & (self.search['day'] > 17), 1, 0
         )
+        self.search['hours'] = self.search['hours'].apply(lambda x: int(((x + 2) % 24)/ 8))
+        self.search['hours'] = one_hot(self.search, 'hours')
 
         self.search['month'] = one_hot(self.search, 'month')
         self.search['weekday'] = one_hot(self.search, 'weekday')

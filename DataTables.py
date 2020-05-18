@@ -20,7 +20,7 @@ class DataTables(DATA):
     search_property_attributes = ['price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
     average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
-    features = [search_pk] + search_attributes + [property_pk] + property_attributes + search_property_attributes
+    features = search_attributes + property_attributes + search_property_attributes
     target = 'position'
 
     destination = 'srch_destination_id'
@@ -29,21 +29,27 @@ class DataTables(DATA):
     def __init__(self, negative_data=100):
         super().__init__(filename='dummy_data.pkl')
         self.negative_data = negative_data
+        self.relevance()
+        self.build_relations()
+
         self.search_table()
         self.property_table()
-        self.build_relations()
-        # self.add_negative_data()
-        # self.preprocess_datetime()
+
+        self.property_price()
         self.preprocess()
         self.preprocess_datetime()
-        self.property_price()
 
         self.property.fillna(np.nan)
         self.search.fillna(np.nan)
+        # self.destination_keys = self.data[[self.destination, self.country]]
+
+        self.data = self.data[[self.target, self.search_pk, self.property_pk, 'random_bool']]
+        self.features = []
+
+        self.add_negative_data()
         self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
         self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
         self.keys = self.data[[self.search_pk, self.property_pk]]
-        self.destination_keys = self.data[[self.destination, self.country]]
 
     def check_uniqueness(self, pk, attributes, verbose=True):
         if verbose:
@@ -61,22 +67,21 @@ class DataTables(DATA):
             negative_property_keys = list(set(list(self.data[self.property_pk])) - self.relations[search_key])
             negative_property_key = random.choice(negative_property_keys)
             new_row = {}
-            new_row[self.search_pk] = max(list(self.data[self.search_pk])) + 1
-            new_row[self.property_pk] = max(list(self.data[self.property_pk])) + 1
-            for search_feature in self.search_attributes:
-                new_row[search_feature] = self.data[(
-                    self.data[self.search_pk] == search_key
-                )].iloc[0][search_feature]
-            for property_feature in self.property_attributes:
-                new_row[property_feature] = self.data[(
-                    self.data[self.property_pk] == negative_property_key
-                )].iloc[0][property_feature]
-            for feature in self.search_property_attributes:
-                new_row[feature] = np.nan
-            new_row[self.target] = 0
-            print(new_row)
+            new_row[self.search_pk] = search_key
+            new_row[self.property_pk] = negative_property_key
+            new_row['random_bool'] = 0
+            # for search_feature in self.search_attributes:
+            #     new_row[search_feature] = self.data[(
+            #         self.data[self.search_pk] == search_key
+            #     )].iloc[0][search_feature]
+            # for property_feature in self.property_attributes:
+            #     new_row[property_feature] = self.data[(
+            #         self.data[self.property_pk] == negative_property_key
+            #     )].iloc[0][property_feature]
+            # for feature in self.search_property_attributes:
+            #     new_row[feature] = np.nan
+            new_row[self.target] = -1
             self.data = self.data.append(new_row, ignore_index=True)
-        print(self.data)
 
     def search_table(self):
         search = []
@@ -139,9 +144,7 @@ class DataTables(DATA):
         self.search['day'] = pd.DatetimeIndex(self.search['date_time']).day
         self.search['weekday'] = self.search.date_time.dt.weekday_name
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
-        self.search.drop('date_time', axis=1)
-        self.features.extend(['year', 'month', 'day', 'weekday', 'hours', 'seconds'])
-        self.features.remove('date_time')
+        self.search = self.search.drop('date_time', axis=1)
 
         self.search['year'] = one_hot(self.search, 'year')
         self.search['last_week_of_nov'] = np.where(
@@ -157,6 +160,7 @@ class DataTables(DATA):
         self.search['weekday'] = one_hot(self.search, 'weekday')
 
 
+
     def save(self, data_name='data.pkl', search_name='search.pkl', property_name='property.pkl'):
         self.data.to_pickle(data_name)
         self.search.to_pickle(search_name)
@@ -165,14 +169,13 @@ class DataTables(DATA):
     def merge(self, search, property):
         search = pd.concat([self.search[self.search_pk], search], axis=1)
         property = pd.concat([self.property[self.property_pk], property], axis=1)
-        # search_property = pd.concat([self.keys, search_property])
-
-        merged_data = pd.merge(self.keys, search, on=self.search_pk)
+        merged_data = pd.merge(
+            self.keys, self.data[[self.property_pk, self.search_pk, self.target]],
+            on=[self.search_pk, self.property_pk]
+        )
+        merged_data = pd.merge(merged_data, search, on=self.search_pk)
         merged_data = pd.merge(merged_data, property, on=self.property_pk)
-        # search_property_table discarded
-        # merged_data = pd.merge(merged_data, search_property, on=[self.search_pk, self.property_pk])
 
-        # here are some code that we need if we keep the data after merging in this class:
         self.data = merged_data
         self.features = list(merged_data.columns)
         return merged_data
@@ -199,6 +202,7 @@ class DataTables(DATA):
         )['price_usd'].rank(pct=True)
         property_price_scores = search_price_groups.groupby(self.property_pk)[
             'price_score'].mean().reset_index()
+        self.data = self.data.drop('price_usd', axis=1)
         self.property = pd.merge(self.property, property_price_scores, on=self.property_pk)
 
     def normalize(self):
@@ -221,15 +225,33 @@ class DataTables(DATA):
             np.nan if math.isnan(x) else 5
         self.data['visitor_hist_adr_usd'] = self.data['visitor_hist_adr_usd'].apply(select_price_range)
 
-
     def preprocess(self):
         self.property = one_hot(self.property, 'prop_country_id')
         self.search = one_hot(self.search, 'visitor_location_country_id')
         self.normalize()
 
+    def relevance(self):
+        method = lambda x: 5 if x['click_bool'] == 1 and x['booking_bool'] == 1 else 1 if x['click_bool'] else 0
+        self.data['relevance'] = self.data.apply(method, axis=1)
+        self.target = 'relevance'
+        # print(self.data.apply(method, axis=1))
+
+    def output_data(self, filename, discard_random_data=False):
+        if discard_random_data:
+            pass
+        else:
+            output_data = None
+        self.data.to_pickle(filename)
+
 if __name__ == '__main__':
-    data = DataTables()
-    data.negative_data = 1
+    data = DataTables(negative_data=1)
+    search = data.search.drop(data.search_pk, axis=1)
+    print(search)
+    property = data.property.drop(data.property_pk, axis=1)
+    data.merge(search, property)
+    # print(data.data)
     # data.add_negative_data()
     # data.one_hot(data.property, 'prop_country_id')
     # data.preprocess()
+    exit()
+

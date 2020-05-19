@@ -6,6 +6,7 @@ import numpy as np
 import math
 from sklearn.preprocessing import OneHotEncoder
 from utils import *
+import pickle
 
 class DataTables(DATA):
     search_pk = 'srch_id'
@@ -31,13 +32,13 @@ class DataTables(DATA):
     def __init__(self, negative_data=100, test=False):
         super().__init__(filename='dummy_data.pkl')
         self.negative_data = negative_data
-
         if test:
             self.data.columns = list(self.data.columns) + self.test_attributes
             self.relevance()
 
         self.build_relations()
 
+        self.data['srch_query_affinity_score'] = self.data['srch_query_affinity_score'].fillna(0)
         self.search_table()
         self.property_table()
 
@@ -45,8 +46,8 @@ class DataTables(DATA):
         self.preprocess()
         self.preprocess_datetime()
 
-        self.property.fillna(np.nan)
-        self.search.fillna(np.nan)
+        self.property = self.property.fillna(np.nan)
+        self.search = self.search.fillna(np.nan)
         # self.destination_keys = self.data[[self.destination, self.country]]
 
         self.data = self.data[[self.target, self.search_pk, self.property_pk, 'random_bool']]
@@ -230,13 +231,15 @@ class DataTables(DATA):
             400: 4,
         }
         select_price_range = lambda x: [price_ranges[i] for i in price_ranges.keys() if x < i][-1] if x < 400 else \
-            np.nan if math.isnan(x) else 5
+            0 if math.isnan(x) else 5
         self.data['visitor_hist_adr_usd'] = self.data['visitor_hist_adr_usd'].apply(select_price_range)
 
     def preprocess(self):
+        self.normalize()
         self.property = one_hot(self.property, 'prop_country_id')
         self.search = one_hot(self.search, 'visitor_location_country_id')
-        self.normalize()
+        self.search = one_hot(self.search, 'visitor_hist_adr_usd')
+
 
     def relevance(self):
         method = lambda x: 5 if x['click_bool'] == 1 and x['booking_bool'] == 1 else 1 if x['click_bool'] else 0
@@ -255,16 +258,30 @@ class DataTables(DATA):
             output_data = self.data[columns]
         output_data.to_pickle(filename)
 
+    def save_search_property(self, search_path, property_path):
+        self.property.to_pickle(search_path)
+
+
 if __name__ == '__main__':
     data = DataTables(negative_data=1)
-    search = data.search.drop(data.search_pk, axis=1)
-    # print(search)
-    property = data.property.drop(data.property_pk, axis=1)
-    data.merge(search, property)
-    data.output_data('dummy_train_data.pkl', discard_random_data=True)
+
+    # print(data.check_uniqueness(data.property_pk, data.property_attributes))
+    # search = data.search.drop(data.search_pk, axis=1)
+    # print(data.search['visitor_hist_starrating'])
+    # property = data.property.drop(data.property_pk, axis=1)
+    # data.output_data('dummy_train_data.pkl', discard_random_data=True)
     exit()
 
-    '''Imputation, cluster, PCA...'''
+
+    '''After Imputation, cluster, PCA...'''
     search_data_path = 'search.pkl'
     property_data_path = 'property.pkl'
+    search = pickle.load(open(search_data_path, 'rb'))
+    property = pickle.load(open(property_data_path, 'rb'))
+
+
+    data.merge(search, property)
+
+
     output_data_path = ''
+    data.output_data(output_data_path)

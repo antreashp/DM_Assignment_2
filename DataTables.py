@@ -20,16 +20,22 @@ class DataTables(DATA):
     search_property_attributes = ['price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
     average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
+    test_attributes = ['position', 'click_bool', 'gross_bookings_usd',
+       'booking_bool']
     features = search_attributes + property_attributes + search_property_attributes
     target = 'position'
 
     destination = 'srch_destination_id'
     country = 'prop_country_id'
 
-    def __init__(self, negative_data=100):
+    def __init__(self, negative_data=100, test=False):
         super().__init__(filename='dummy_data.pkl')
         self.negative_data = negative_data
-        self.relevance()
+
+        if test:
+            self.data.columns = list(self.data.columns) + self.test_attributes
+            self.relevance()
+
         self.build_relations()
 
         self.search_table()
@@ -46,9 +52,11 @@ class DataTables(DATA):
         self.data = self.data[[self.target, self.search_pk, self.property_pk, 'random_bool']]
         self.features = []
 
-        self.add_negative_data()
-        self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
-        self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
+        if not test:
+            self.add_negative_data()
+            self.random_keys = self.data[(self.data['random_bool'] == True)][[self.search_pk, self.property_pk]]
+            self.non_random_keys = self.data[(self.data['random_bool'] == False)][[self.search_pk, self.property_pk]]
+
         self.keys = self.data[[self.search_pk, self.property_pk]]
 
     def check_uniqueness(self, pk, attributes, verbose=True):
@@ -237,21 +245,26 @@ class DataTables(DATA):
         # print(self.data.apply(method, axis=1))
 
     def output_data(self, filename, discard_random_data=False):
+        columns = list(self.data.columns)
+        columns.remove(self.target)
+        columns = [self.target] + columns
+
         if discard_random_data:
-            pass
+            output_data = self.non_random()[columns]
         else:
-            output_data = None
-        self.data.to_pickle(filename)
+            output_data = self.data[columns]
+        output_data.to_pickle(filename)
 
 if __name__ == '__main__':
     data = DataTables(negative_data=1)
     search = data.search.drop(data.search_pk, axis=1)
-    print(search)
+    # print(search)
     property = data.property.drop(data.property_pk, axis=1)
     data.merge(search, property)
-    # print(data.data)
-    # data.add_negative_data()
-    # data.one_hot(data.property, 'prop_country_id')
-    # data.preprocess()
+    data.output_data('dummy_train_data.pkl', discard_random_data=True)
     exit()
 
+    '''Imputation, cluster, PCA...'''
+    search_data_path = 'search.pkl'
+    property_data_path = 'property.pkl'
+    output_data_path = ''

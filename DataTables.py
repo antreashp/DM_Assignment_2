@@ -7,6 +7,7 @@ import math
 from sklearn.preprocessing import OneHotEncoder
 from utils import *
 import pickle
+import sys
 
 class DataTables(DATA):
     search_pk = 'srch_id'
@@ -258,8 +259,13 @@ class DataTables(DATA):
             output_data = self.data[columns]
         output_data.to_pickle(filename)
 
-    def save_search_property(self, search_path, property_path):
-        self.property.to_pickle(search_path)
+    def save_search_property(self, search_path, property_path, data_table_path):
+        self.property.to_pickle(property_path)
+        self.search.to_pickle(search_path)
+        del self.property
+        del self.search
+        self.data = self.data[[self.target] + [self.search_pk] + [self.property_pk] + ['random_bool']]
+        self.data.to_pickle(data_table_path)
 
 
 if __name__ == '__main__':
@@ -272,8 +278,12 @@ if __name__ == '__main__':
     # data.output_data('dummy_train_data.pkl', discard_random_data=True)
     exit()
 
+    data.save_search_property('', '', '')
+    del data
 
     '''After Imputation, cluster, PCA...'''
+    data = pickle.load(open('', 'rb'))
+
     search_data_path = 'search.pkl'
     property_data_path = 'property.pkl'
     search = pickle.load(open(search_data_path, 'rb'))

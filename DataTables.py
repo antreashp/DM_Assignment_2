@@ -18,10 +18,10 @@ class DataTables(DATA):
     property_pk = 'prop_id'
     property_attributes = ['prop_country_id', 'prop_starrating', 'prop_review_score', 'prop_brand_bool',
                            'prop_location_score1', 'prop_location_score2', 'prop_log_historical_price',
-                           'promotion_flag', 'srch_query_affinity_score',]
+                           'promotion_flag', 'srch_query_affinity_score', 'has_prop_starrating']
     search_property_attributes = ['price_usd', 'click_bool', 'gross_bookings_usd',
        'booking_bool', 'orig_destination_distance']
-    average_attributes = ['price_usd', 'gross_bookings_usd', 'orig_destination_distance']
+    average_attributes = ['price_usd', 'orig_destination_distance']
     test_attributes = ['position', 'click_bool', 'gross_bookings_usd',
        'booking_bool']
     features = search_attributes + property_attributes + search_property_attributes
@@ -40,6 +40,8 @@ class DataTables(DATA):
         self.build_relations()
 
         self.data['srch_query_affinity_score'] = self.data['srch_query_affinity_score'].fillna(0)
+        self.data['prop_starrating'] = self.data['prop_starrating'].fillna(0)
+        self.data['has_prop_starrating'] = self.data['prop_starrating'].apply(lambda x: 1 if x else 0)
         self.search_table()
         self.property_table()
 
@@ -99,33 +101,26 @@ class DataTables(DATA):
         for search_group in tqdm(self.data.groupby(self.search_pk)):
             search_id = search_group[1].iloc[0][self.search_pk]
             count = search_group[1][self.search_pk].count()
-            num_click = (search_group[1]['click_bool'] == 1).sum()
-            num_booking = (search_group[1]['booking_bool'] == 1).sum()
-            average_attributes = [search_group[1][x].mean() for x in self.average_attributes]
             single_search = [search_id] + [search_group[1].iloc[0][x] for x in self.search_attributes]+ \
-                            average_attributes + [count, num_click, num_booking]
+                            [count]
             search.append(single_search)
         self.search = pd.DataFrame(search, columns=[self.search_pk] + self.search_attributes +
-                                                   ['ave_' + x for x in self.average_attributes] +
-                                                   ['properties_count', 'num_clicks', 'num_bookings'])
+                                                   ['properties_count'])
 
     def property_table(self):
         property = []
         for property_group in tqdm(self.data.groupby(self.property_pk)):
             property_id = property_group[1].iloc[0][self.property_pk]
             count = property_group[1][self.property_pk].count()
-            num_click = (property_group[1]['click_bool'] == 1).sum()
-            num_booking = (property_group[1]['booking_bool'] == 1).sum()
-            average_attributes = [property_group[1][x].mean() for x in self.average_attributes]
+            ave_price = np.log(property_group[1]['price_usd'].mean() + 1)
             single_property = [property_id] + [property_group[1].iloc[0][x] for x in self.property_attributes]+ \
-                            average_attributes + [count, num_click, num_booking]
+                            [count] + [ave_price]
             property.append(single_property)
         self.property = pd.DataFrame(
             property, columns=
             [self.property_pk] +
             self.property_attributes +
-            ['ave_' + x for x in self.average_attributes] +
-            ['search_count', 'num_clicks', 'num_bookings']
+            ['search_count', 'ave_price']
         )
 
     def build_relations(self):
@@ -156,7 +151,7 @@ class DataTables(DATA):
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
         self.search = self.search.drop('date_time', axis=1)
 
-        self.search['year'] = one_hot(self.search, 'year')
+        self.search = one_hot(self.search, 'year')
         self.search['last_week_of_nov'] = np.where(
             (self.search['month'] == 11) & (self.search['day'] > 22), 1, 0
         )
@@ -164,10 +159,10 @@ class DataTables(DATA):
             (self.search['month'] == 12) & (self.search['day'] > 17), 1, 0
         )
         self.search['hours'] = self.search['hours'].apply(lambda x: int(((x + 2) % 24)/ 8))
-        self.search['hours'] = one_hot(self.search, 'hours')
+        self.search = one_hot(self.search, 'hours')
 
-        self.search['month'] = one_hot(self.search, 'month')
-        self.search['weekday'] = one_hot(self.search, 'weekday')
+        self.search = one_hot(self.search, 'month')
+        self.search = one_hot(self.search, 'weekday')
 
 
 
@@ -212,6 +207,7 @@ class DataTables(DATA):
         )['price_usd'].rank(pct=True)
         property_price_scores = search_price_groups.groupby(self.property_pk)[
             'price_score'].mean().reset_index()
+
         self.data = self.data.drop('price_usd', axis=1)
         self.property = pd.merge(self.property, property_price_scores, on=self.property_pk)
 
@@ -238,6 +234,9 @@ class DataTables(DATA):
     def preprocess(self):
         self.normalize()
         self.property = one_hot(self.property, 'prop_country_id')
+        self.property['prop_location_score2'] = self.property['prop_location_score2'].fillna(0)
+        self.property['prop_location_score1'] += self.property['prop_location_score2']
+        self.property = self.property.drop(['prop_location_score2'], axis=1)
         self.search = one_hot(self.search, 'visitor_location_country_id')
         self.search = one_hot(self.search, 'visitor_hist_adr_usd')
 
@@ -270,12 +269,8 @@ class DataTables(DATA):
 
 if __name__ == '__main__':
     data = DataTables(negative_data=1)
-
-    # print(data.check_uniqueness(data.property_pk, data.property_attributes))
-    # search = data.search.drop(data.search_pk, axis=1)
-    # print(data.search['visitor_hist_starrating'])
-    # property = data.property.drop(data.property_pk, axis=1)
-    # data.output_data('dummy_train_data.pkl', discard_random_data=True)
+    pd.set_option('display.max_columns', None)
+    print(data.property.head(10))
     exit()
 
     data.save_search_property('', '', '')

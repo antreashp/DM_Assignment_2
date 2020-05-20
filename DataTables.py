@@ -283,11 +283,18 @@ class DataTables(DATA):
 
 if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
-    data = DataTables(negative_data=1)
-    exit()
+    filename = 'dummy_data.pkl'
+    data = DataTables(filedata = filename,negative_data=1)
 
-    data.save_search_property('search.pkl', 'property.pkl')
-    pickle.dump(data, open('datatables.pkl', 'wb'))
+
+    # exit()
+    if 'dummy' in filename:
+        data.save_search_property('dummy_search.pkl', 'dummy_property.pkl')
+        pickle.dump(data, open('dummy_datatables.pkl', 'wb'))
+    else:
+        data.save_search_property('all_search.pkl', 'all_property.pkl')
+        pickle.dump(data, open('all_datatables.pkl', 'wb'))
+    
     del data
 
     data = pickle.load(open('datatables.pkl', 'rb'))

@@ -30,8 +30,8 @@ class DataTables(DATA):
     destination = 'srch_destination_id'
     country = 'prop_country_id'
 
-    def __init__(self, negative_data=100, test=False):
-        super().__init__(filename='dummy_data.pkl')
+    def __init__(self, filename='dummy_data.pkl', negative_data=100, test=False):
+        super().__init__(filename=filename)
         self.negative_data = negative_data
         if test:
             self.data.columns = list(self.data.columns) + self.test_attributes
@@ -50,6 +50,7 @@ class DataTables(DATA):
         self.preprocess_datetime()
 
         self.property = self.property.fillna(np.nan)
+        self.property['prop_review_score'] = self.property['prop_review_score'].fillna(0)
         self.search = self.search.fillna(np.nan)
         # self.destination_keys = self.data[[self.destination, self.country]]
 
@@ -266,11 +267,20 @@ class DataTables(DATA):
         self.data = self.data[[self.target] + [self.search_pk] + [self.property_pk] + ['random_bool']]
         self.data.to_pickle(data_table_path)
 
+    def post_processing(self, y_predict, save_path):
+        y_predict = pd.Series(y_predict, name='y_predict')
+        prediction = pd.concat([self.keys, y_predict], axis=1)
+        prediction = prediction.groupby(self.search_pk, as_index=False).apply(pd.DataFrame.sort_values, 'y_predict', ascending=False)
+        prediction = prediction.reset_index()[[self.search_pk, self.property_pk]]
+        print(prediction)
+        prediction.to_csv(save_path, index=False)
+
 
 if __name__ == '__main__':
     data = DataTables(negative_data=1)
     pd.set_option('display.max_columns', None)
     print(data.property.head(10))
+
     exit()
 
     data.save_search_property('', '', '')
@@ -290,3 +300,22 @@ if __name__ == '__main__':
 
     output_data_path = ''
     data.output_data(output_data_path)
+
+    '''Train on this output'''
+    data_test = DataTables(filename = 'test_set_VU_DM.csv', negative_data=0, test=True)
+    data_test.save_search_property('', '', '')
+    '''Test PCA'''
+    data_test = pickle.load(open('', 'rb'))
+
+    search_data_path = 'search.pkl'
+    property_data_path = 'property.pkl'
+    search = pickle.load(open(search_data_path, 'rb'))
+    property = pickle.load(open(property_data_path, 'rb'))
+    data_test.merge(search, property)
+
+
+    '''Running the model, prediction -> y_predict'''
+    y_predict = [[0, 1, 5][random.randint(0,2)] for x in range(700)] # dummy
+
+    data_test.post_processing(y_predict, 'test_result.csv')
+    

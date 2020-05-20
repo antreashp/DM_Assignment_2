@@ -35,6 +35,7 @@ class DataTables(DATA):
         self.negative_data = negative_data
         if test:
             self.data.columns = list(self.data.columns) + self.test_attributes
+        else:
             self.relevance()
 
         self.build_relations()
@@ -51,6 +52,7 @@ class DataTables(DATA):
 
         self.property = self.property.fillna(np.nan)
         self.property['prop_review_score'] = self.property['prop_review_score'].fillna(0)
+        self.search['visitor_hist_starrating'] = self.search['visitor_hist_starrating'].fillna(2.5)
         self.search = self.search.fillna(np.nan)
         # self.destination_keys = self.data[[self.destination, self.country]]
 
@@ -107,6 +109,7 @@ class DataTables(DATA):
             search.append(single_search)
         self.search = pd.DataFrame(search, columns=[self.search_pk] + self.search_attributes +
                                                    ['properties_count'])
+        self.search_keys = self.search[self.search_pk]
 
     def property_table(self):
         property = []
@@ -123,6 +126,7 @@ class DataTables(DATA):
             self.property_attributes +
             ['search_count', 'ave_price']
         )
+        self.property_keys = self.property[self.property_pk]
 
     def build_relations(self):
         self.relations = {}
@@ -173,8 +177,8 @@ class DataTables(DATA):
         self.property.to_pickle(property_name)
 
     def merge(self, search, property):
-        search = pd.concat([self.search[self.search_pk], search], axis=1)
-        property = pd.concat([self.property[self.property_pk], property], axis=1)
+        search = pd.concat([self.search_keys, search], axis=1)
+        property = pd.concat([self.property_keys, property], axis=1)
         merged_data = pd.merge(
             self.keys, self.data[[self.property_pk, self.search_pk, self.target]],
             on=[self.search_pk, self.property_pk]
@@ -251,6 +255,8 @@ class DataTables(DATA):
     def output_data(self, filename, discard_random_data=False):
         columns = list(self.data.columns)
         columns.remove(self.target)
+        columns.remove(self.search_pk)
+        columns.remove(self.property_pk)
         columns = [self.target] + columns
 
         if discard_random_data:
@@ -259,33 +265,42 @@ class DataTables(DATA):
             output_data = self.data[columns]
         output_data.to_pickle(filename)
 
-    def save_search_property(self, search_path, property_path, data_table_path):
+    def save_search_property(self, search_path, property_path):
+        self.property = self.property.drop(self.property_pk, axis=1)
+        self.search = self.search.drop(self.search_pk, axis=1)
         self.property.to_pickle(property_path)
         self.search.to_pickle(search_path)
-        self.property = self.property[self.property_pk]
-        self.search = self.search[self.search_pk]
-        self.data = self.data[[self.target] + [self.search_pk] + [self.property_pk] + ['random_bool']]
-        self.data.to_pickle(data_table_path)
+        del self.search
+        del self.property
 
     def post_processing(self, y_predict, save_path):
         y_predict = pd.Series(y_predict, name='y_predict')
         prediction = pd.concat([self.keys, y_predict], axis=1)
         prediction = prediction.groupby(self.search_pk, as_index=False).apply(pd.DataFrame.sort_values, 'y_predict', ascending=False)
         prediction = prediction.reset_index()[[self.search_pk, self.property_pk]]
-        print(prediction)
+        # print(prediction)
         prediction.to_csv(save_path, index=False)
 
 
 if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
     data = DataTables(negative_data=1)
-    print(data.search)
-
     exit()
 
-    data.save_search_property('', '', '')
+    data.save_search_property('search.pkl', 'property.pkl')
+    pickle.dump(data, open('datatables.pkl', 'wb'))
     del data
 
+    data = pickle.load(open('datatables.pkl', 'rb'))
+    search = pickle.load(open('search.pkl', 'rb'))
+    property = pickle.load(open('property.pkl', 'rb'))
+    data.merge(search, property)
+    data.output_data('output.pkl')
+
+    print(pickle.load(open('output.pkl', 'rb')))
+
+    data.save_search_property('', '')
+    del data
     '''After Imputation, cluster, PCA...'''
     data = pickle.load(open('', 'rb'))
 
@@ -303,7 +318,7 @@ if __name__ == '__main__':
 
     '''Train on this output'''
     data_test = DataTables(filename = 'test_set_VU_DM.csv', negative_data=0, test=True)
-    data_test.save_search_property('', '', '')
+    data_test.save_search_property('', '')
     '''Test PCA'''
     data_test = pickle.load(open('', 'rb'))
 

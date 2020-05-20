@@ -148,7 +148,7 @@ class DataTables(DATA):
         self.search['year'] = pd.DatetimeIndex(self.search['date_time']).year
         self.search['month'] = pd.DatetimeIndex(self.search['date_time']).month
         self.search['day'] = pd.DatetimeIndex(self.search['date_time']).day
-        self.search['weekday'] = self.search.date_time.dt.weekday_name
+        self.search['weekday'] = self.search.date_time.dt.day_name
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
         self.search = self.search.drop('date_time', axis=1)
 
@@ -230,15 +230,15 @@ class DataTables(DATA):
         }
         select_price_range = lambda x: [price_ranges[i] for i in price_ranges.keys() if x < i][-1] if x < 400 else \
             0 if math.isnan(x) else 5
-        self.data['visitor_hist_adr_usd'] = self.data['visitor_hist_adr_usd'].apply(select_price_range)
+        self.search['visitor_hist_adr_usd'] = self.search['visitor_hist_adr_usd'].apply(select_price_range)
 
     def preprocess(self):
         self.normalize()
-        self.property = one_hot(self.property, 'prop_country_id')
+        # self.property = one_hot(self.property, 'prop_country_id')
         self.property['prop_location_score2'] = self.property['prop_location_score2'].fillna(0)
         self.property['prop_location_score1'] += self.property['prop_location_score2']
         self.property = self.property.drop(['prop_location_score2'], axis=1)
-        self.search = one_hot(self.search, 'visitor_location_country_id')
+        # self.search = one_hot(self.search, 'visitor_location_country_id')
         self.search = one_hot(self.search, 'visitor_hist_adr_usd')
 
 
@@ -262,8 +262,8 @@ class DataTables(DATA):
     def save_search_property(self, search_path, property_path, data_table_path):
         self.property.to_pickle(property_path)
         self.search.to_pickle(search_path)
-        del self.property
-        del self.search
+        self.property = self.property[self.property_pk]
+        self.search = self.search[self.search_pk]
         self.data = self.data[[self.target] + [self.search_pk] + [self.property_pk] + ['random_bool']]
         self.data.to_pickle(data_table_path)
 
@@ -277,9 +277,9 @@ class DataTables(DATA):
 
 
 if __name__ == '__main__':
-    data = DataTables(negative_data=1)
     pd.set_option('display.max_columns', None)
-    print(data.property.head(10))
+    data = DataTables(negative_data=1)
+    print(data.search)
 
     exit()
 
@@ -318,4 +318,4 @@ if __name__ == '__main__':
     y_predict = [[0, 1, 5][random.randint(0,2)] for x in range(700)] # dummy
 
     data_test.post_processing(y_predict, 'test_result.csv')
-    
+

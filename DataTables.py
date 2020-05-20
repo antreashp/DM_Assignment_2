@@ -255,7 +255,6 @@ class DataTables(DATA):
     def output_data(self, filename, discard_random_data=False):
         columns = list(self.data.columns)
         columns.remove(self.target)
-        columns.remove(self.search_pk)
         columns.remove(self.property_pk)
         columns = [self.target] + columns
 

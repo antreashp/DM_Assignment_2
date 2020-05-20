@@ -5,7 +5,7 @@ new_data = DataTables('dummy.pkl', negative_data=0)
 
 old_data = pickle.load(open('old_data', 'rb'))
 objects = {
-    'search', 'property', 'keys', 'non_random_keys', 'random_keys'
+    'search', 'property', 'keys', 'non_random_keys', 'random_keys', 'data'
 }
 
 new_data.search = old_data.search

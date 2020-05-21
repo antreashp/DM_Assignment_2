@@ -77,7 +77,7 @@ class DataTables(DATA):
         return all(group[1][x].nunique() <= 1 for group in self.data.groupby(pk) for x in attributes)
 
     def add_negative_data(self):
-        for i in range(self.negative_data):
+        for i in tqdm(range(self.negative_data)):
             search_key = self.data.iloc[random.randint(0, self.data.shape[0])][self.search_pk]
             negative_property_keys = list(set(list(self.data[self.property_pk])) - self.relations[search_key])
             negative_property_key = random.choice(negative_property_keys)
@@ -217,14 +217,14 @@ class DataTables(DATA):
         self.property = pd.merge(self.property, property_price_scores, on=self.property_pk)
 
     def normalize(self):
-        methods = {
-            'prop_starrating': lambda x: x / 5,
-            'prop_review_score': lambda x: x / 5,
-            'prop_location_score1': lambda x: x / 10,
-        }
+        # methods = {
+        #     'prop_starrating': lambda x: x / 1,
+        #     'prop_review_score': lambda x: x / 1,
+        #     'prop_location_score1': lambda x: x / 1,
+        # }
 
-        for key, method in methods.items():
-            self.data[key] = self.data[key].apply(method)
+        # for key, method in methods.items():
+        #     self.data[key] = self.data[key].apply(method)
 
         price_ranges = {
             100: 1,
@@ -248,10 +248,26 @@ class DataTables(DATA):
 
     def relevance(self):
         method = lambda x: 5 if x['click_bool'] == 1 and x['booking_bool'] == 1 else 1 if x['click_bool'] else 0
-        self.data['relevance'] = self.data.apply(method, axis=1)
+        # print('here')
+
+        # self.data['relevance'] = np.nan
+        # for i, row in tqdm(self.data.iterrows()):
+        #     # print(5 if row['click_bool'] == 1 and row['booking_bool'] == 1 else 1 if row['click_bool'] else 0)
+        #     # print(i)
+        #     row['relevance'] =  5 if row['click_bool'] == 1 and row['booking_bool'] == 1 else 1 if row['click_bool'] else 0
+        
+
+
+
+
+        # self.data['relevance'].map(lambda x: 5 if self.data['click_bool'] == 1 and self.data['booking_bool'] == 1 else 1 if self.data['click_bool'] else 0)
+        # print('here')
+        
+        self.data['relevance'] = self.data[['click_bool','booking_bool']].apply(method, axis=1)
+        # print('here')
         self.target = 'relevance'
         # print(self.data.apply(method, axis=1))
-
+        
     def output_data(self, filename, discard_random_data=False):
         columns = list(self.data.columns)
         columns.remove(self.target)
@@ -283,8 +299,8 @@ class DataTables(DATA):
 
 if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
-    filename = 'dummy_data.pkl'
-    data = DataTables(filedata = filename,negative_data=1)
+    filename = 'all_data.pkl'
+    data = DataTables(filename = filename,negative_data=10000)
 
 
     # exit()
@@ -294,7 +310,7 @@ if __name__ == '__main__':
     else:
         data.save_search_property('all_search.pkl', 'all_property.pkl')
         pickle.dump(data, open('all_datatables.pkl', 'wb'))
-    
+    exit()
     del data
 
     data = pickle.load(open('datatables.pkl', 'rb'))

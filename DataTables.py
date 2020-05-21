@@ -78,26 +78,43 @@ class DataTables(DATA):
         return all(group[1][x].nunique() <= 1 for group in self.data.groupby(pk) for x in attributes)
 
     def add_negative_data(self):
-        for i in tqdm(range(self.negative_data)):
-            search_key = self.data.iloc[random.randint(0, self.data.shape[0])][self.search_pk]
-            negative_property_keys = list(set(list(self.data[self.property_pk])) - self.relations[search_key])
-            negative_property_key = random.choice(negative_property_keys)
-            new_row = {}
-            new_row[self.search_pk] = search_key
-            new_row[self.property_pk] = negative_property_key
-            new_row['random_bool'] = 0
-            # for search_feature in self.search_attributes:
-            #     new_row[search_feature] = self.data[(
-            #         self.data[self.search_pk] == search_key
-            #     )].iloc[0][search_feature]
-            # for property_feature in self.property_attributes:
-            #     new_row[property_feature] = self.data[(
-            #         self.data[self.property_pk] == negative_property_key
-            #     )].iloc[0][property_feature]
-            # for feature in self.search_property_attributes:
-            #     new_row[feature] = np.nan
-            new_row[self.target] = -1
-            self.data = self.data.append(new_row, ignore_index=True)
+        negative_data_count = 0
+        searches = self.search.shape[0]
+        properties = self.property.shape[0]
+        pbar = tqdm(total=self.negative_data)
+        while negative_data_count < self.negative_data:
+            i = self.search.iloc[random.randint(0, searches - 1)][self.search_pk]
+            j = self.property.iloc[random.randint(0, properties - 1)][self.property_pk]
+            if j not in self.relations[i]:
+                new_row = {}
+                new_row[self.search_pk] = i
+                new_row[self.property_pk] = j
+                new_row[self.target] = -1
+                new_row['random_bool'] = 0
+                self.data = self.data.append(new_row, ignore_index=True)
+                negative_data_count += 1
+                pbar.update(1)
+        pbar.close()
+        # for i in tqdm(range(self.negative_data)):
+        #     search_key = self.data.iloc[random.randint(0, self.data.shape[0])][self.search_pk]
+        #     negative_property_keys = list(set(list(self.data[self.property_pk])) - self.relations[search_key])
+        #     negative_property_key = random.choice(negative_property_keys)
+        #     new_row = {}
+        #     new_row[self.search_pk] = search_key
+        #     new_row[self.property_pk] = negative_property_key
+        #     new_row['random_bool'] = 0
+        #     # for search_feature in self.search_attributes:
+        #     #     new_row[search_feature] = self.data[(
+        #     #         self.data[self.search_pk] == search_key
+        #     #     )].iloc[0][search_feature]
+        #     # for property_feature in self.property_attributes:
+        #     #     new_row[property_feature] = self.data[(
+        #     #         self.data[self.property_pk] == negative_property_key
+        #     #     )].iloc[0][property_feature]
+        #     # for feature in self.search_property_attributes:
+        #     #     new_row[feature] = np.nan
+        #     new_row[self.target] = -1
+        #     self.data = self.data.append(new_row, ignore_index=True)
 
     def search_table(self):
         search = []
@@ -300,8 +317,8 @@ class DataTables(DATA):
 
 if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
-    filename = 'all_data.pkl'
-    data = DataTables(filename = filename,negative_data=10000)
+    filename = 'dummy_data.pkl'
+    data = DataTables(filename = filename,negative_data=1000)
 
 
     # exit()

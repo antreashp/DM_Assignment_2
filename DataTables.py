@@ -34,7 +34,8 @@ class DataTables(DATA):
         super().__init__(filename=filename)
         self.negative_data = negative_data
         if test:
-            self.data.columns = list(self.data.columns) + self.test_attributes
+            for x in self.test_attributes:
+                self.data[x] = np.nan
         else:
             self.relevance()
 

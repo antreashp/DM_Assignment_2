@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 import seaborn as sns
 import xgboost as xgb
+import pickle
 def data_to_str(d):
     str_data = []
     for i in range(len(d)):
@@ -119,7 +120,7 @@ def eval(test_data,trained_model=None,model_type = 'LR'):
     return output
 
 
-def plot(plot_data,show=True,save = False,model_type = None):
+def plot(plot_data,show=False,save = False,model_type = None):
     my_plot = sns.lmplot('true score', 'predicted score', data=plot_data, fit_reg=False)
     if save:
         my_plot.savefig(os.path.join('plots',model_type+'inference.png'))
@@ -127,29 +128,33 @@ def plot(plot_data,show=True,save = False,model_type = None):
         plt.show()
 if __name__ == "__main__":
 
-    model_type = 'LR'
-    # model_type = 'Ranknet'
-    # model_type = 'LambdaRank'
+    # model_type = 'LR'
+    model_type = 'LambdaRank'
     # model_type = 'LambdaMART'
-    train_data = gen_dummy_data(54,25,500)
-    test_data = gen_dummy_data(54,25,25)
+    # train_data = gen_dummy_data(54,25,500)
+    # test_data = gen_dummy_data(54,25,25)
+    train_data = pickle.load(open('DATA/train_after_gmm.pkl','rb'))
+    print(train_data)
+    train_data = train_data.to_numpy()
+    # def to_xgmatrix(train_data):
+    #     def change_row():
 
-
+    # exit()
     print('Training ',model_type,' model...')
     train_output = train(train_data,model_type = model_type)
     trained_model = train_output['trained_model']
     print('Training Results:')
     print('model: ',model_type,' score: ',train_output['score'])
 
-    print('Evaluating ',model_type,' model...')
-    test_output = eval(test_data,trained_model=trained_model,model_type = model_type)
-    inference_df = test_output['inferenceDf'] 
-    print('Evaluation Results:')
-    print('model: ',model_type,' Loss: ',test_output['Loss'])
+    # print('Evaluating ',model_type,' model...')
+    # test_output = eval(test_data,trained_model=trained_model,model_type = model_type)
+    # inference_df = test_output['inferenceDf'] 
+    # print('Evaluation Results:')
+    # print('model: ',model_type,' Loss: ',test_output['Loss'])
 
 
     
-    print('Plotting Inference of ',model_type,' model...')
-    plot(inference_df,show=True,save = False,model_type = model_type)
+    # print('Plotting Inference of ',model_type,' model...')
+    # plot(inference_df,show=True,save = False,model_type = model_type)
 
 

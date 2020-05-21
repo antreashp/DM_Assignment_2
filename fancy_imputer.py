@@ -13,6 +13,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 import pickle 
+from DataTables import DataTables
 # sys.path.insert(0,'')
 from datawig import SimpleImputer
 import sklearn.datasets as sd
@@ -82,9 +83,11 @@ def fancyimpute_hpo(fancyimputer, param_candidates, X, mask, percent_validation=
         mse_hpo.append(mse)
 
     best_params = all_param_candidates[np.array(mse_hpo).argmin()]
+    print(best_params)
     # now retrain with best params on all training data
     X_incomplete = X.copy()
     X_incomplete[mask] = np.nan
+
     X_imputed = fancyimputer(**best_params).fit_transform(X_incomplete)
     mse_best = evaluate_mse(X_imputed, X, mask)
     print(f"HPO: {fancyimputer.__name__}, best {best_params}, mse={mse_best}")
@@ -127,8 +130,12 @@ def impute_datawig(X, mask):
     df.columns = [str(c) for c in df.columns]
     dw_dir = os.path.join(DIR_PATH,'datawig_imputers')
     df = SimpleImputer.complete(df, output_path=dw_dir, hpo=True, verbose=0, iterations=1)
+    
     for d in glob.glob(os.path.join(dw_dir,'*')):
-        shutil.rmtree(d)
+        try:
+            shutil.rmtree(d)
+        except:
+            continue
     mse = evaluate_mse(df.values, X, mask)
     return mse
 
@@ -157,9 +164,11 @@ def get_data(data_fn):
     return X
 
 def generate_missing_mask(X, percent_missing=10, missingness='MCAR'):
+    
     if missingness=='MCAR':
         # missing completely at random
-        mask = np.random.rand(*X.shape) < percent_missing / 100.
+        mask = np.random.rand(*X.shape) < percent_missing / 100. 
+        
     elif missingness=='MAR':
         # missing at random, missingness is conditioned on a random other column
         # this case could contain MNAR cases, when the percentile in the other column is 
@@ -192,12 +201,39 @@ def generate_missing_mask(X, percent_missing=10, missingness='MCAR'):
             discard_idx = range(discard_lower_start, discard_lower_start + n_values_to_discard)
             values_to_discard = X[:,col_affected].argsort()[discard_idx]
             mask[values_to_discard, col_affected] = 1
-    return mask > 0
+
+    nans = np.isnan(X)
+    
+    # print(nans[0])
+    # print(mask[0] > 0 )
+    # print(np.logical_and( mask > 0 , np.logical_not(nans))[0])
+    # exit()
+    # print(np.logical_xor( mask > 0 , nans)  )
+    return np.logical_and( mask > 0 , np.logical_not(nans))
 
 def experiment(percent_missing_list=[3,20], nreps = 2):
+    data = DataTables()
+
+    pickle.dump( data.property, open( 'orig_datatables_properties.pkl', "wb" ) )
+    pickle.dump( data.search, open( 'orig_datatables_searches.pkl', "wb" ) )
+    # del data.property
+    # del data.search
+    # del data.data
+    pickle.dump( data, open( 'orig_datatables.pkl', "wb" ) )
     
-    data = pickle.load( open(  'datatables.pkl', "rb" ) )
-    data = data.property[ data.property_attributes].fillna(np.nan)
+    exit()
+    data = pickle.load( open(  'orig_datatables_properties.pkl', "rb" ) )
+    # data = pickle.load( open(  'datatables_dummy.pkl', "rb" ) )
+    # data = pickle.load( open(  'orig_datatables.pkl', "rb" ) )
+    # data = pickle.load( open(  'orig_datatables.pkl', "rb" ) )
+    # print(data.columns)
+    for c in list(data.columns):
+        if 'country_id' in c :
+            data = data.drop(columns=c)
+    # print(list(data.columns))
+    # exit()
+    data = data.fillna(np.nan).dropna()
+    data = data.head(200)
     data.__name__ = 'datatables'
     DATA_LOADERS = [data]
     # sd.
@@ -215,7 +251,7 @@ def experiment(percent_missing_list=[3,20], nreps = 2):
         for percent_missing in tqdm(percent_missing_list):
             for data_fn in DATA_LOADERS:
                 X = get_data(data_fn)
-                for missingness in ['MCAR', 'MAR', 'MNAR']:
+                for missingness in ['MCAR','MAR','MNAR']:
                     for _ in range(nreps):
                         missing_mask = generate_missing_mask(X, percent_missing, missingness)
                         for imputer_fn in imputers:

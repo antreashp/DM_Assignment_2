@@ -296,6 +296,7 @@ class DataTables(DATA):
             output_data = self.non_random()[columns]
         else:
             output_data = self.data[columns]
+            print(output_data)
         output_data.to_pickle(filename)
 
     def save_search_property(self, search_path, property_path):
@@ -316,46 +317,53 @@ class DataTables(DATA):
 
 
 if __name__ == '__main__':
-    pd.set_option('display.max_columns', None)
-    filename = 'dummy_data.pkl'
-    data = DataTables(filename = filename,negative_data=1000)
+    # pd.set_option('display.max_columns', None)
+    # filename = 'all_data.pkl'
+    # data = DataTables(filename = filename,negative_data=1000)
+    # print(data.property.columns)
+    # print(data.search.columns)
 
-
+    # # exit()
+    # if 'dummy' in filename:
+    #     data.save_search_property('dummy_search.pkl', 'dummy_property.pkl')
+    #     pickle.dump(data, open('dummy_datatables.pkl', 'wb'))
+    # else:
+    #     data.save_search_property('all_search.pkl', 'all_property.pkl')
+    #     pickle.dump(data, open('all_datatables.pkl', 'wb'))
     # exit()
-    if 'dummy' in filename:
-        data.save_search_property('dummy_search.pkl', 'dummy_property.pkl')
-        pickle.dump(data, open('dummy_datatables.pkl', 'wb'))
-    else:
-        data.save_search_property('all_search.pkl', 'all_property.pkl')
-        pickle.dump(data, open('all_datatables.pkl', 'wb'))
-    exit()
-    del data
+    # del data
 
-    data = pickle.load(open('datatables.pkl', 'rb'))
-    search = pickle.load(open('search.pkl', 'rb'))
-    property = pickle.load(open('property.pkl', 'rb'))
-    data.merge(search, property)
-    data.output_data('output.pkl')
+    # data = pickle.load(open('datatables.pkl', 'rb'))
+    # search = pickle.load(open('search.pkl', 'rb'))
+    # property = pickle.load(open('property.pkl', 'rb'))
+    # data.merge(search, property)
+    # data.output_data('output.pkl')
 
-    print(pickle.load(open('output.pkl', 'rb')))
+    # print(pickle.load(open('output.pkl', 'rb')))
 
-    data.save_search_property('', '')
-    del data
+    # data.save_search_property('', '')
+    # del data
     '''After Imputation, cluster, PCA...'''
-    data = pickle.load(open('', 'rb'))
+    data = pickle.load(open('all_datatables.pkl', 'rb'))
 
-    search_data_path = 'search.pkl'
-    property_data_path = 'property.pkl'
-    search = pickle.load(open(search_data_path, 'rb'))
-    property = pickle.load(open(property_data_path, 'rb'))
+    
 
+
+    search_data_path = 'DATA/after_gmm_srch.pkl'
+    property_data_path = 'DATA/after_gmm_prop.pkl'
+    
+    search = pd.DataFrame(pickle.load(open(search_data_path, 'rb')))
+    property = pd.DataFrame(pickle.load(open(property_data_path, 'rb')))
+    print(search.shape)
+    print(property.shape)
+    
 
     data.merge(search, property)
 
 
-    output_data_path = ''
+    output_data_path = 'DATA/train_after_gmm.pkl' 
     data.output_data(output_data_path)
-
+    exit()
     '''Train on this output'''
     data_test = DataTables(filename = 'test_set_VU_DM.csv', negative_data=0, test=True)
     data_test.save_search_property('', '')

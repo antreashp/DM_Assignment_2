@@ -152,7 +152,7 @@ class DataTables(DATA):
         self.search['year'] = pd.DatetimeIndex(self.search['date_time']).year
         self.search['month'] = pd.DatetimeIndex(self.search['date_time']).month
         self.search['day'] = pd.DatetimeIndex(self.search['date_time']).day
-        self.search['weekday'] = self.search.date_time.dt.day_name
+        self.search['weekday'] = self.search.date_time.dt.day_name()
         self.search['hours'] = pd.DatetimeIndex(self.search['date_time']).hour
         self.search = self.search.drop('date_time', axis=1)
 
